@@ -231,8 +231,8 @@ PYBIND11_MODULE(fasttext_pybind, m) {
           [](fasttext::FastText& m, std::string s) { m.saveModel(s); })
       .def(
           "test",
-          [](fasttext::FastText& m, 
-            const std::string filename, 
+          [](fasttext::FastText& m,
+            const std::string filename,
             int32_t k,
             fasttext::real threshold) {
             std::ifstream ifs(filename);
@@ -339,6 +339,22 @@ PYBIND11_MODULE(fasttext_pybind, m) {
             qa.dsub = dsub;
             qa.qnorm = qnorm;
             m.quantize(qa);
+          })
+      .def(
+          "finetune",
+          [](fasttext::FastText& m,
+             const std::string input,
+             int epoch,
+             double lr,
+             int thread,
+             int verbose) {
+            fasttext::Args qa = fasttext::Args();
+            qa.input = input;
+            qa.epoch = epoch;  // TODO: check if this affects anything
+            qa.lr = lr;
+            qa.thread = thread;
+            qa.verbose = verbose;
+            m.finetune(qa);
           })
       .def(
           "predict",

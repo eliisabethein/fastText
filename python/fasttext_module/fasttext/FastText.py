@@ -301,6 +301,21 @@ class _FastText(object):
         self.f.setMatrices(input_matrix.astype(np.float32),
                            output_matrix.astype(np.float32))
 
+    def finetune(self, input, epoch, lr=None, thread=None, verbose=None):
+        """
+        Continue training existing model with data from input file.
+        Author: Eliisabet Hein
+        """
+        a = self.f.getArgs()
+        if not lr:
+            lr = a.lr
+        if not thread:
+            thread = a.thread
+        if not verbose:
+            verbose = a.verbose
+
+        self.f.finetune(input, epoch, lr, thread, verbose)
+
     @property
     def words(self):
         if self._words is None:

@@ -353,6 +353,29 @@ void FastText::quantize(const Args& qargs) {
   model_ = std::make_shared<Model>(input_, output_, loss, normalizeGradient);
 }
 
+void FastText::finetune(const Args& qargs) {
+  if (args_->model != model_name::sup) {
+    throw std::invalid_argument(
+        "Only finetune supervised models (for now).");
+  }
+  args_->input = qargs.input;
+  args_->output = qargs.output;
+  std::shared_ptr<DenseMatrix> input =
+      std::dynamic_pointer_cast<DenseMatrix>(input_);
+  std::shared_ptr<DenseMatrix> output =
+      std::dynamic_pointer_cast<DenseMatrix>(output_);
+  bool normalizeGradient = (args_->model == model_name::sup);
+
+  args_->epoch = qargs.epoch;
+  args_->lr = qargs.lr;
+  args_->thread = qargs.thread;
+  args_->verbose = qargs.verbose;
+  quant_ = false;
+  auto loss = createLoss(output_);
+  model_ = std::make_shared<Model>(input, output, loss, normalizeGradient);
+  startThreads();
+}
+
 void FastText::supervised(
     Model::State& state,
     real lr,

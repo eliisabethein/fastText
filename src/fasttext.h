@@ -116,6 +116,8 @@ class FastText {
 
   void quantize(const Args& qargs);
 
+  void finetune(const Args& qargs);
+
   std::tuple<int64_t, double, double>
   test(std::istream& in, int32_t k, real threshold = 0.0);
 
