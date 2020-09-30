@@ -34,6 +34,7 @@ class FastText {
  protected:
   std::shared_ptr<Args> args_;
   std::shared_ptr<Dictionary> dict_;
+  std::shared_ptr<Dictionary> currDict_;
   std::shared_ptr<Matrix> input_;
   std::shared_ptr<Matrix> output_;
   std::shared_ptr<Model> model_;
@@ -116,7 +117,7 @@ class FastText {
 
   void quantize(const Args& qargs);
 
-  void finetune(const Args& qargs);
+  void finetune(const Args& fargs);
 
   std::tuple<int64_t, double, double>
   test(std::istream& in, int32_t k, real threshold = 0.0);

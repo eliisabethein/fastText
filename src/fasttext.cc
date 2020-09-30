@@ -353,26 +353,29 @@ void FastText::quantize(const Args& qargs) {
   model_ = std::make_shared<Model>(input_, output_, loss, normalizeGradient);
 }
 
-void FastText::finetune(const Args& qargs) {
+void FastText::finetune(const Args& fargs) {
+  currDict_ = std::make_shared<Dictionary>(args_);
+
   if (args_->model != model_name::sup) {
     throw std::invalid_argument(
         "Only finetune supervised models (for now).");
   }
-  args_->input = qargs.input;
-  args_->output = qargs.output;
-  std::shared_ptr<DenseMatrix> input =
-      std::dynamic_pointer_cast<DenseMatrix>(input_);
-  std::shared_ptr<DenseMatrix> output =
-      std::dynamic_pointer_cast<DenseMatrix>(output_);
-  bool normalizeGradient = (args_->model == model_name::sup);
 
-  args_->epoch = qargs.epoch;
-  args_->lr = qargs.lr;
-  args_->thread = qargs.thread;
-  args_->verbose = qargs.verbose;
-  quant_ = false;
-  auto loss = createLoss(output_);
-  model_ = std::make_shared<Model>(input, output, loss, normalizeGradient);
+  args_->input = fargs.input;
+
+  std::ifstream ifs(args_->input);
+  if (!ifs.is_open()) {
+    throw std::invalid_argument(
+        args_->input + " cannot be opened for training!");
+  }
+  currDict_->readFromFile(ifs);
+  ifs.close();
+
+  args_->epoch = fargs.epoch;
+  args_->lr = fargs.lr;
+  args_->thread = fargs.thread;
+  args_->verbose = fargs.verbose;
+
   startThreads();
 }
 
@@ -644,7 +647,7 @@ void FastText::trainThread(int32_t threadId) {
 
   Model::State state(args_->dim, output_->size(0), threadId + args_->seed);
 
-  const int64_t ntokens = dict_->ntokens();
+  const int64_t ntokens = currDict_->ntokens();
   int64_t localTokenCount = 0;
   std::vector<int32_t> line, labels;
   try {
@@ -743,6 +746,8 @@ std::shared_ptr<Matrix> FastText::createTrainOutputMatrix() const {
 void FastText::train(const Args& args) {
   args_ = std::make_shared<Args>(args);
   dict_ = std::make_shared<Dictionary>(args_);
+  currDict_ = std::make_shared<Dictionary>(args_);
+
   if (args_->input == "-") {
     // manage expectations
     throw std::invalid_argument("Cannot use stdin for training!");
@@ -753,6 +758,10 @@ void FastText::train(const Args& args) {
         args_->input + " cannot be opened for training!");
   }
   dict_->readFromFile(ifs);
+  ifs.close();
+
+  ifs.open(args_->input);
+  currDict_->readFromFile(ifs);
   ifs.close();
 
   if (!args_->pretrainedVectors.empty()) {
@@ -785,7 +794,7 @@ void FastText::startThreads() {
   for (int32_t i = 0; i < args_->thread; i++) {
     threads.push_back(std::thread([=]() { trainThread(i); }));
   }
-  const int64_t ntokens = dict_->ntokens();
+  const int64_t ntokens = currDict_->ntokens();
   // Same condition as trainThread
   while (keepTraining(ntokens)) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
